@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  api:
+    build: ./backend/src/RentFlow.Api
+  web:
+    build: ./frontend
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
