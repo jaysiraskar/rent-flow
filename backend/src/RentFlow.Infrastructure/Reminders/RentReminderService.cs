@@ -21,7 +21,7 @@ public class RentReminderService(
         if (emailChannel is null)
         {
             logger.LogWarning("No email notification channel registered.");
-            return new ReminderDispatchResult(0, 0, 0);
+            return new ReminderDispatchResult(0, 0, 0, DateTime.UtcNow);
         }
 
         DateTime now = DateTime.UtcNow;
@@ -80,7 +80,7 @@ public class RentReminderService(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return new ReminderDispatchResult(candidates.Count, sent, failed);
+        return new ReminderDispatchResult(candidates.Count, sent, failed, DateTime.UtcNow);
     }
 
     private async Task LogAsync(RentRecord record, ReminderType type, ReminderChannel channel, string recipient, string message, bool success, string? reason, CancellationToken cancellationToken)

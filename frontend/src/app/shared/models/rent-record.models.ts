@@ -20,3 +20,16 @@ export interface DashboardSummary {
   collectedAmount: number;
   pendingAmount: number;
 }
+
+export interface DashboardDueItem {
+  rentRecordId: string;
+  tenantId: string;
+  propertyId: string;
+  tenantName: string;
+  propertyName: string;
+  dueDate: string;
+  expectedAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  status: 'Unpaid' | 'Partial' | 'Paid';
+}
