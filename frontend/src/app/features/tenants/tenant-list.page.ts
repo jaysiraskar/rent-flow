@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PropertiesService } from '../properties/properties.service';
 import { TenantsService } from './tenants.service';
 import { Property } from '../../shared/models/property.models';
-import { Tenant } from '../../shared/models/tenant.models';
+import { Tenant, TenantPayload } from '../../shared/models/tenant.models';
 
 @Component({
   standalone: true,
@@ -13,8 +13,11 @@ import { Tenant } from '../../shared/models/tenant.models';
   <div class="container grid">
     <h2>Tenants</h2>
 
+    <div *ngIf="message" class="card" style="border-left:4px solid #2563eb;">{{message}}</div>
+    <div *ngIf="error" class="card error">{{error}}</div>
+
     <div class="card grid">
-      <select [(ngModel)]="selectedPropertyId" (change)="loadTenants()">
+      <select [(ngModel)]="selectedPropertyId" (change)="onPropertyChange()">
         <option value="">Select property</option>
         <option *ngFor="let p of properties" [value]="p.id">{{p.name}}</option>
       </select>
@@ -23,20 +26,55 @@ import { Tenant } from '../../shared/models/tenant.models';
         <input [(ngModel)]="form.fullName" placeholder="Name" />
         <input [(ngModel)]="form.phone" placeholder="Phone" />
         <input [(ngModel)]="form.roomOrBed" placeholder="Room/Bed" />
-        <input [(ngModel)]="form.monthlyRent" type="number" placeholder="Rent" />
-        <input [(ngModel)]="form.rentDueDay" type="number" placeholder="Due day" />
-        <button (click)="addTenant()">Add Tenant</button>
+        <input [(ngModel)]="form.monthlyRent" type="number" min="1" placeholder="Rent" />
+        <input [(ngModel)]="form.rentDueDay" type="number" min="1" max="28" placeholder="Due day" />
+        <button [disabled]="saving || !canSubmit(form, false)" (click)="addTenant()">{{saving ? 'Saving...' : 'Add Tenant'}}</button>
       </div>
+      <div *ngIf="formError" class="error">{{formError}}</div>
     </div>
 
-    <div class="card" *ngIf="selectedPropertyId">
+    <div *ngIf="loading" class="card">Loading tenants...</div>
+
+    <div class="card" *ngIf="selectedPropertyId && !loading">
       <table>
-        <thead><tr><th>Name</th><th>Phone</th><th>Rent</th><th>Room</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Phone</th><th>Rent</th><th>Room</th><th>Due Day</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
           <tr *ngFor="let t of tenants">
-            <td>{{t.fullName}}</td><td>{{t.phone}}</td><td>₹{{t.monthlyRent}}</td><td>{{t.roomOrBed}}</td>
-            <td><button (click)="remove(t.id)">Delete</button></td>
+            <ng-container *ngIf="editingTenantId !== t.id; else editRow">
+              <td>{{t.fullName}}</td>
+              <td>{{t.phone}}</td>
+              <td>₹{{t.monthlyRent}}</td>
+              <td>{{t.roomOrBed}}</td>
+              <td>{{t.rentDueDay}}</td>
+              <td>{{t.isActive ? 'Active' : 'Inactive'}}</td>
+              <td>
+                <div class="row">
+                  <button [disabled]="saving" (click)="startEdit(t)">Edit</button>
+                  <button [disabled]="saving" (click)="remove(t.id)">Delete</button>
+                </div>
+              </td>
+            </ng-container>
+            <ng-template #editRow>
+              <td><input [(ngModel)]="editForm.fullName" placeholder="Name" /></td>
+              <td><input [(ngModel)]="editForm.phone" placeholder="Phone" /></td>
+              <td><input [(ngModel)]="editForm.monthlyRent" type="number" min="1" /></td>
+              <td><input [(ngModel)]="editForm.roomOrBed" placeholder="Room/Bed" /></td>
+              <td><input [(ngModel)]="editForm.rentDueDay" type="number" min="1" max="28" /></td>
+              <td>
+                <select [(ngModel)]="editForm.isActive">
+                  <option [ngValue]="true">Active</option>
+                  <option [ngValue]="false">Inactive</option>
+                </select>
+              </td>
+              <td>
+                <div class="row">
+                  <button [disabled]="saving || !canSubmit(editForm, true)" (click)="updateTenant()">{{saving ? 'Saving...' : 'Update'}}</button>
+                  <button [disabled]="saving" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </td>
+            </ng-template>
           </tr>
+          <tr *ngIf="tenants.length === 0"><td colspan="7" class="muted">No tenants found for this property.</td></tr>
         </tbody>
       </table>
     </div>
@@ -46,24 +84,155 @@ export class TenantListPage implements OnInit {
   properties: Property[] = [];
   tenants: Tenant[] = [];
   selectedPropertyId = '';
-  form = { fullName: '', phone: '', roomOrBed: '', monthlyRent: 0, rentDueDay: 5, moveInDate: new Date().toISOString().slice(0, 10) };
+  loading = false;
+  saving = false;
+  message = '';
+  error = '';
+  formError = '';
+
+  editingTenantId: string | null = null;
+
+  form: TenantPayload = { fullName: '', phone: '', roomOrBed: '', monthlyRent: 0, rentDueDay: 5, moveInDate: new Date().toISOString().slice(0, 10) };
+  editForm: TenantPayload = { fullName: '', phone: '', roomOrBed: '', monthlyRent: 0, rentDueDay: 5, isActive: true };
 
   constructor(private propertyService: PropertiesService, private tenantService: TenantsService) {}
 
-  ngOnInit() { this.propertyService.list().subscribe((res) => this.properties = res); }
-
-  loadTenants() {
-    if (!this.selectedPropertyId) return;
-    this.tenantService.listByProperty(this.selectedPropertyId).subscribe((res) => this.tenants = res);
-  }
-
-  addTenant() {
-    if (!this.selectedPropertyId) return;
-    this.tenantService.create(this.selectedPropertyId, this.form).subscribe(() => {
-      this.form = { fullName: '', phone: '', roomOrBed: '', monthlyRent: 0, rentDueDay: 5, moveInDate: new Date().toISOString().slice(0, 10) };
-      this.loadTenants();
+  ngOnInit() {
+    this.propertyService.list().subscribe({
+      next: (res) => this.properties = res,
+      error: (e) => this.error = e?.error?.error ?? 'Failed to load properties'
     });
   }
 
-  remove(tenantId: string) { this.tenantService.remove(tenantId).subscribe(() => this.loadTenants()); }
+  onPropertyChange() {
+    this.clearMessages();
+    this.cancelEdit();
+    this.loadTenants();
+  }
+
+  loadTenants() {
+    if (!this.selectedPropertyId) {
+      this.tenants = [];
+      return;
+    }
+
+    this.loading = true;
+    this.tenantService.listByProperty(this.selectedPropertyId).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.tenants = res;
+      },
+      error: (e) => {
+        this.loading = false;
+        this.error = e?.error?.error ?? 'Failed to load tenants';
+      }
+    });
+  }
+
+  addTenant() {
+    this.clearMessages();
+    if (!this.selectedPropertyId) {
+      this.formError = 'Select a property first.';
+      return;
+    }
+
+    this.formError = this.validate(this.form, false);
+    if (this.formError) return;
+
+    this.saving = true;
+    this.tenantService.create(this.selectedPropertyId, this.form).subscribe({
+      next: () => {
+        this.saving = false;
+        this.form = { fullName: '', phone: '', roomOrBed: '', monthlyRent: 0, rentDueDay: 5, moveInDate: new Date().toISOString().slice(0, 10) };
+        this.message = 'Tenant added successfully.';
+        this.loadTenants();
+      },
+      error: (e) => {
+        this.saving = false;
+        this.error = e?.error?.error ?? 'Failed to add tenant';
+      }
+    });
+  }
+
+  startEdit(tenant: Tenant) {
+    this.clearMessages();
+    this.editingTenantId = tenant.id;
+    this.editForm = {
+      fullName: tenant.fullName,
+      phone: tenant.phone,
+      roomOrBed: tenant.roomOrBed,
+      monthlyRent: tenant.monthlyRent,
+      rentDueDay: tenant.rentDueDay,
+      email: tenant.email,
+      isActive: tenant.isActive
+    };
+  }
+
+  updateTenant() {
+    if (!this.editingTenantId) return;
+
+    this.clearMessages();
+    this.formError = this.validate(this.editForm, true);
+    if (this.formError) return;
+
+    this.saving = true;
+    this.tenantService.update(this.editingTenantId, this.editForm).subscribe({
+      next: () => {
+        this.saving = false;
+        this.editingTenantId = null;
+        this.message = 'Tenant updated successfully.';
+        this.loadTenants();
+      },
+      error: (e) => {
+        this.saving = false;
+        this.error = e?.error?.error ?? 'Failed to update tenant';
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.editingTenantId = null;
+    this.formError = '';
+  }
+
+  remove(tenantId: string) {
+    this.clearMessages();
+    if (!confirm('Delete this tenant? This cannot be undone.')) return;
+
+    this.saving = true;
+    this.tenantService.remove(tenantId).subscribe({
+      next: () => {
+        this.saving = false;
+        this.message = 'Tenant deleted successfully.';
+        this.loadTenants();
+      },
+      error: (e) => {
+        this.saving = false;
+        this.error = e?.error?.error ?? 'Failed to delete tenant';
+      }
+    });
+  }
+
+  canSubmit(payload: TenantPayload, isUpdate: boolean) {
+    return !this.validate(payload, isUpdate);
+  }
+
+  private validate(payload: TenantPayload, isUpdate: boolean) {
+    if (!payload.fullName?.trim()) return 'Tenant name is required.';
+    if (!payload.phone?.trim()) return 'Phone is required.';
+    if (!payload.roomOrBed?.trim()) return 'Room/Bed is required.';
+
+    if (!payload.monthlyRent || payload.monthlyRent <= 0) return 'Monthly rent must be greater than 0.';
+    if (!payload.rentDueDay || payload.rentDueDay < 1 || payload.rentDueDay > 28) return 'Due day must be between 1 and 28.';
+
+    if (isUpdate && payload.isActive === undefined) return 'Active status is required for update.';
+
+    return '';
+  }
+
+  private clearMessages() {
+    this.message = '';
+    this.error = '';
+    this.formError = '';
+  }
 }
