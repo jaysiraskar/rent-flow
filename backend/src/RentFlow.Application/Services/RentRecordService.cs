@@ -20,10 +20,11 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 
         var tenants = await tenantsQuery.ToListAsync(cancellationToken);
         var tenantIds = tenants.Select(t => t.Id).ToList();
-        var existingIds = await dbContext.RentRecords
+        var existingIds = (await dbContext.RentRecords
             .Where(r => r.BillingYear == year && r.BillingMonth == month && tenantIds.Contains(r.TenantId))
             .Select(r => r.TenantId)
-            .ToHashSetAsync(cancellationToken);
+            .ToListAsync(cancellationToken))
+            .ToHashSet();
 
         var created = 0;
         foreach (var tenant in tenants.Where(t => !existingIds.Contains(t.Id)))
