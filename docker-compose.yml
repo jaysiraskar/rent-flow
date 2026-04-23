@@ -1,0 +1,58 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: rentflow-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost", "-U", "sa", "-P", "${MSSQL_SA_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/RentFlow.Api/Dockerfile
+    container_name: rentflow-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=RentFlowDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER:-RentFlow}
+      Jwt__Audience: ${JWT_AUDIENCE:-RentFlow.Client}
+      Smtp__Host: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__FromEmail: ${SMTP_FROM_EMAIL:-no-reply@rentflow.in}
+      Smtp__FromName: ${SMTP_FROM_NAME:-RentFlow}
+      Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+      Reminders__UpcomingDaysThreshold: ${REMINDER_UPCOMING_DAYS:-3}
+      Reminders__IntervalMinutes: ${REMINDER_INTERVAL_MINUTES:-60}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: rentflow-web
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+
+volumes:
+  sql_data:
