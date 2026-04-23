@@ -27,6 +27,6 @@ Implemented backend API for:
    - `dotnet run`
 
 ## Notes
-- Frontend implementation is intentionally pending.
+- Frontend includes auth, dashboard, properties, tenants, rent records, and reminder logs views.
 - Background reminder job is implemented for email reminders and logs each reminder attempt.
 - WhatsApp can be added later by implementing a new `INotificationChannel`.
