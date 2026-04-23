@@ -19,3 +19,4 @@ export interface ReminderLog {
   failureReason?: string;
   sentAtUtc: string;
 }
+
