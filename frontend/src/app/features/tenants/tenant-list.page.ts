@@ -28,14 +28,16 @@ import { Tenant, TenantPayload } from '../../shared/models/tenant.models';
         <input [(ngModel)]="form.roomOrBed" placeholder="Room/Bed" />
         <input [(ngModel)]="form.monthlyRent" type="number" min="1" placeholder="Rent" />
         <input [(ngModel)]="form.rentDueDay" type="number" min="1" max="28" placeholder="Due day" />
-        <button [disabled]="saving" (click)="addTenant()">{{saving ? 'Saving...' : 'Add Tenant'}}</button>
+        <button [disabled]="saving || !canSubmit(form, false)" (click)="addTenant()">{{saving ? 'Saving...' : 'Add Tenant'}}</button>
       </div>
       <div *ngIf="formError" class="error">{{formError}}</div>
     </div>
 
-    <div class="card" *ngIf="selectedPropertyId">
+    <div *ngIf="loading" class="card">Loading tenants...</div>
+
+    <div class="card" *ngIf="selectedPropertyId && !loading">
       <table>
-        <thead><tr><th>Name</th><th>Phone</th><th>Rent</th><th>Room</th><th>Due Day</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Phone</th><th>Rent</th><th>Room</th><th>Due Day</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
           <tr *ngFor="let t of tenants">
             <ng-container *ngIf="editingTenantId !== t.id; else editRow">
@@ -44,6 +46,7 @@ import { Tenant, TenantPayload } from '../../shared/models/tenant.models';
               <td>₹{{t.monthlyRent}}</td>
               <td>{{t.roomOrBed}}</td>
               <td>{{t.rentDueDay}}</td>
+              <td>{{t.isActive ? 'Active' : 'Inactive'}}</td>
               <td>
                 <div class="row">
                   <button [disabled]="saving" (click)="startEdit(t)">Edit</button>
@@ -58,13 +61,20 @@ import { Tenant, TenantPayload } from '../../shared/models/tenant.models';
               <td><input [(ngModel)]="editForm.roomOrBed" placeholder="Room/Bed" /></td>
               <td><input [(ngModel)]="editForm.rentDueDay" type="number" min="1" max="28" /></td>
               <td>
+                <select [(ngModel)]="editForm.isActive">
+                  <option [ngValue]="true">Active</option>
+                  <option [ngValue]="false">Inactive</option>
+                </select>
+              </td>
+              <td>
                 <div class="row">
-                  <button [disabled]="saving" (click)="updateTenant()">{{saving ? 'Saving...' : 'Update'}}</button>
+                  <button [disabled]="saving || !canSubmit(editForm, true)" (click)="updateTenant()">{{saving ? 'Saving...' : 'Update'}}</button>
                   <button [disabled]="saving" (click)="cancelEdit()">Cancel</button>
                 </div>
               </td>
             </ng-template>
           </tr>
+          <tr *ngIf="tenants.length === 0"><td colspan="7" class="muted">No tenants found for this property.</td></tr>
         </tbody>
       </table>
     </div>
@@ -74,6 +84,7 @@ export class TenantListPage implements OnInit {
   properties: Property[] = [];
   tenants: Tenant[] = [];
   selectedPropertyId = '';
+  loading = false;
   saving = false;
   message = '';
   error = '';
@@ -105,9 +116,16 @@ export class TenantListPage implements OnInit {
       return;
     }
 
+    this.loading = true;
     this.tenantService.listByProperty(this.selectedPropertyId).subscribe({
-      next: (res) => this.tenants = res,
-      error: (e) => this.error = e?.error?.error ?? 'Failed to load tenants'
+      next: (res) => {
+        this.loading = false;
+        this.tenants = res;
+      },
+      error: (e) => {
+        this.loading = false;
+        this.error = e?.error?.error ?? 'Failed to load tenants';
+      }
     });
   }
 
@@ -193,6 +211,10 @@ export class TenantListPage implements OnInit {
         this.error = e?.error?.error ?? 'Failed to delete tenant';
       }
     });
+  }
+
+  canSubmit(payload: TenantPayload, isUpdate: boolean) {
+    return !this.validate(payload, isUpdate);
   }
 
   private validate(payload: TenantPayload, isUpdate: boolean) {

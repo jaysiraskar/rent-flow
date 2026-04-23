@@ -12,9 +12,10 @@ import { Property, PropertyPayload } from '../../shared/models/property.models';
   <div class="container grid">
     <div class="row justify-between">
       <h2>Properties</h2>
-      <button [disabled]="saving" (click)="toggleCreateForm()">{{showForm ? 'Cancel' : 'Add Property'}}</button>
-    </div>
+<button [disabled]="saving || loading" (click)="toggleCreateForm()">{{showForm ? 'Cancel' : 'Add Property'}}</button>
+</div>
 
+<div *ngIf="loading" class="card">Loading properties...</div>
     <div *ngIf="message" class="card" style="border-left:4px solid #2563eb;">{{message}}</div>
     <div *ngIf="error" class="card error">{{error}}</div>
 
@@ -28,11 +29,11 @@ import { Property, PropertyPayload } from '../../shared/models/property.models';
           <input [(ngModel)]="form.pincode" placeholder="Pincode" />
         </div>
         <div *ngIf="formError" class="error">{{formError}}</div>
-        <button [disabled]="saving" (click)="save()">{{saving ? 'Saving...' : 'Save'}}</button>
+<button [disabled]="saving || !canSubmitForm(form)" (click)="save()">{{saving ? 'Saving...' : 'Save'}}</button>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" *ngIf="!loading">
       <table>
         <thead><tr><th>Name</th><th>Location</th><th>Actions</th></tr></thead>
         <tbody>
@@ -64,11 +65,12 @@ import { Property, PropertyPayload } from '../../shared/models/property.models';
                 <button [disabled]="saving" (click)="remove(p.id)">Delete</button>
               </div>
               <div class="row" *ngIf="editingPropertyId === p.id">
-                <button [disabled]="saving" (click)="update()">{{saving ? 'Saving...' : 'Update'}}</button>
+<button [disabled]="saving || !canSubmitForm(editForm)" (click)="update()">{{saving ? 'Saving...' : 'Update'}}</button>
                 <button [disabled]="saving" (click)="cancelEdit()">Cancel</button>
               </div>
             </td>
           </tr>
+          <tr *ngIf="properties.length === 0"><td colspan="3" class="muted">No properties yet.</td></tr>
         </tbody>
       </table>
     </div>
@@ -77,6 +79,7 @@ import { Property, PropertyPayload } from '../../shared/models/property.models';
 export class PropertyListPage implements OnInit {
   properties: Property[] = [];
   showForm = false;
+loading = false;
   saving = false;
   message = '';
   error = '';
@@ -91,11 +94,20 @@ export class PropertyListPage implements OnInit {
 
   ngOnInit() { this.load(); }
 
-  load() {
-    this.propertiesService.list().subscribe({
-      next: (res) => this.properties = res,
-      error: (e) => this.error = e?.error?.error ?? 'Failed to load properties'
-    });
+load() {
+  this.loading = true;
+  this.error = '';
+
+  this.propertiesService.list().subscribe({
+    next: (res) => {
+      this.properties = res;
+      this.loading = false;
+    },
+    error: (e) => {
+      this.error = e?.error?.error ?? 'Failed to load properties';
+      this.loading = false;
+    }
+  });
   }
 
   toggleCreateForm() {
@@ -179,6 +191,10 @@ export class PropertyListPage implements OnInit {
         this.error = e?.error?.error ?? 'Failed to delete property';
       }
     });
+  }
+
+  canSubmitForm(payload: PropertyPayload) {
+  return !this.validate(payload);
   }
 
   private validate(payload: PropertyPayload) {
