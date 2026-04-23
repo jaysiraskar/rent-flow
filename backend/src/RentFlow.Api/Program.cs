@@ -13,6 +13,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 WebApplication app = builder.Build();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -28,6 +38,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.UseCors("AllowAll");
 
 using (IServiceScope scope = app.Services.CreateScope())
 {
