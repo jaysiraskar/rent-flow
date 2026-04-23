@@ -1,8 +1,48 @@
 version: "3.9"
 services:
-  api:
-    build: ./backend/src/RentFlow.Api
-  web:
-    build: ./frontend
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: rentflow-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_password123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - rentflow-sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend/src/RentFlow.Api
+    container_name: rentflow-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=RentDb;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True"
+      Jwt__Key: "dev-only-super-secret-key-change-me"
+      Jwt__Issuer: "RentFlow"
+      Jwt__Audience: "RentFlow.Client"
+      Reminders__UpcomingDaysThreshold: "3"
+      Reminders__IntervalMinutes: "60"
+    ports:
+      - "8080:8080"
+
+  web:
+    build: ./frontend
+    container_name: rentflow-web
+    depends_on:
+      - api
+    environment:
+      API_BASE_URL: "http://localhost:8080/api/v1"
+    ports:
+      - "4200:4200"
+
+volumes:
+  rentflow-sqldata:
