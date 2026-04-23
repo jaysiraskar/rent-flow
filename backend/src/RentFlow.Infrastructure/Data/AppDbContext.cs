@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<RentRecord> RentRecords => Set<RentRecord>();
+    public DbSet<ReminderLog> ReminderLogs => Set<ReminderLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.PaidAmount).HasPrecision(18, 2);
             entity.HasIndex(x => new { x.PropertyId, x.BillingYear, x.BillingMonth, x.Status });
             entity.HasIndex(x => new { x.TenantId, x.BillingYear, x.BillingMonth }).IsUnique();
+        });
+
+        modelBuilder.Entity<ReminderLog>(entity =>
+        {
+            entity.HasOne(x => x.RentRecord).WithMany().HasForeignKey(x => x.RentRecordId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(x => x.Recipient).HasMaxLength(160).IsRequired();
+            entity.Property(x => x.Message).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.FailureReason).HasMaxLength(500);
+            entity.HasIndex(x => new { x.RentRecordId, x.SentAtUtc });
         });
     }
 }

@@ -2,10 +2,12 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using RentFlow.Api.BackgroundJobs;
 using RentFlow.Application.Interfaces;
 using RentFlow.Application.Services;
 using RentFlow.Infrastructure.Auth;
 using RentFlow.Infrastructure.Data;
+using RentFlow.Infrastructure.Reminders;
 
 namespace RentFlow.Api.Extensions;
 
@@ -18,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IRentRecordService, RentRecordService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IRentReminderService, RentReminderService>();
         return services;
     }
 
@@ -29,6 +32,11 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IAuthTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<INotificationChannel, EmailNotificationChannel>();
+
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.Configure<ReminderOptions>(configuration.GetSection("Reminders"));
+        services.AddHostedService<RentReminderHostedService>();
 
         var key = configuration["Jwt:Key"] ?? "dev-only-super-secret-key-change-me";
         var issuer = configuration["Jwt:Issuer"] ?? "RentFlow";

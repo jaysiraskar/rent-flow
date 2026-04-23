@@ -9,5 +9,6 @@ public interface IAppDbContext
     DbSet<Property> Properties { get; }
     DbSet<Tenant> Tenants { get; }
     DbSet<RentRecord> RentRecords { get; }
+    DbSet<ReminderLog> ReminderLogs { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -9,7 +9,8 @@ Implemented backend API for:
 - Tenant CRUD
 - Monthly rent record generation and payment updates
 - Dashboard summary
-- EF Core SQL Server context, initial migration, and seed data
+- Background rent reminder processing (email channel) + reminder logs
+- EF Core SQL Server context, migrations, and seed data
 
 ## Seed credentials
 - Email: `demo@rentflow.in`
@@ -27,4 +28,5 @@ Implemented backend API for:
 
 ## Notes
 - Frontend implementation is intentionally pending.
-- Reminder background jobs are pending for the next phase.
+- Background reminder job is implemented for email reminders and logs each reminder attempt.
+- WhatsApp can be added later by implementing a new `INotificationChannel`.
