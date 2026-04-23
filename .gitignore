@@ -1,5 +1,12 @@
-node_modules/
-.angular/
-.vs/
-bin/
-obj/
+ Node / Angular
+frontend/node_modules/
+frontend/.angular/
+
+# .NET
+backend/.vs/
+backend/**/bin/
+backend/**/obj/
+
+# General
+*.log
+.DS_Store
