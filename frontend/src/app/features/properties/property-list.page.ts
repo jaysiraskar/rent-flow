@@ -96,14 +96,16 @@ export class PropertyListPage implements OnInit {
 
   load() {
     this.loading = true;
+    this.error = '';
+
     this.propertiesService.list().subscribe({
       next: (res) => {
-        this.loading = false;
         this.properties = res;
+        this.loading = false;
       },
       error: (e) => {
-        this.loading = false;
         this.error = e?.error?.error ?? 'Failed to load properties';
+        this.loading = false;
       }
     });
   }
