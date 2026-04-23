@@ -2,6 +2,7 @@ export interface ReminderDispatchResult {
   checkedRecords: number;
   sentCount: number;
   failedCount: number;
+  processedAtUtc: string;
 }
 
 export interface ReminderLog {

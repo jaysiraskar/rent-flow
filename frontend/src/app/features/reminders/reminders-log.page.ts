@@ -13,6 +13,9 @@ import { ReminderDispatchResult, ReminderLog } from '../../shared/models/reminde
   <div class="container grid">
     <h2>Reminder Logs</h2>
 
+    <div *ngIf="message" class="card" style="border-left:4px solid #2563eb;">{{message}}</div>
+    <div *ngIf="error" class="card error">{{error}}</div>
+
     <div class="card row">
       <input type="number" [(ngModel)]="year" placeholder="Year" style="max-width:120px" />
       <input type="number" [(ngModel)]="month" placeholder="Month" style="max-width:120px" />
@@ -20,12 +23,13 @@ import { ReminderDispatchResult, ReminderLog } from '../../shared/models/reminde
         <option value="">All properties</option>
         <option *ngFor="let p of properties" [value]="p.id">{{p.name}}</option>
       </select>
-      <button (click)="load()">Filter</button>
-      <button (click)="runNow()">Run now</button>
+      <input type="number" min="1" max="500" [(ngModel)]="take" placeholder="Rows" style="max-width:120px" />
+      <button [disabled]="loading || running" (click)="load()">{{loading ? 'Loading...' : 'Filter'}}</button>
+      <button [disabled]="loading || running" (click)="runNow()">{{running ? 'Running...' : 'Run now'}}</button>
     </div>
 
     <div *ngIf="result" class="card">
-      Checked: <strong>{{result.checkedRecords}}</strong>, Sent: <strong>{{result.sentCount}}</strong>, Failed: <strong>{{result.failedCount}}</strong>
+      Last run: <strong>{{result.processedAtUtc}}</strong> · Checked: <strong>{{result.checkedRecords}}</strong>, Sent: <strong>{{result.sentCount}}</strong>, Failed: <strong>{{result.failedCount}}</strong>
     </div>
 
     <div class="card">
@@ -41,6 +45,7 @@ import { ReminderDispatchResult, ReminderLog } from '../../shared/models/reminde
             <td>{{log.recipient}}</td>
             <td>{{log.success ? 'Success' : ('Failed: ' + (log.failureReason || 'Unknown'))}}</td>
           </tr>
+          <tr *ngIf="logs.length === 0"><td colspan="7" class="muted">No reminder logs for selected filters.</td></tr>
         </tbody>
       </table>
     </div>
@@ -49,10 +54,15 @@ import { ReminderDispatchResult, ReminderLog } from '../../shared/models/reminde
 export class ReminderLogPage implements OnInit {
   year = new Date().getFullYear();
   month = new Date().getMonth() + 1;
+  take = 100;
   propertyId = '';
   properties: Property[] = [];
   logs: ReminderLog[] = [];
   result?: ReminderDispatchResult;
+  loading = false;
+  running = false;
+  message = '';
+  error = '';
 
   constructor(private remindersService: RemindersService, private propertiesService: PropertiesService) {}
 
@@ -62,13 +72,40 @@ export class ReminderLogPage implements OnInit {
   }
 
   load() {
-    this.remindersService.logs(this.year, this.month, this.propertyId || undefined).subscribe((res) => this.logs = res);
+    this.clearMessages();
+    this.loading = true;
+    this.remindersService.logs(this.year, this.month, this.propertyId || undefined, this.take).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.logs = res;
+      },
+      error: (e) => {
+        this.loading = false;
+        this.error = e?.error?.error ?? 'Failed to load reminder logs';
+      }
+    });
   }
 
   runNow() {
-    this.remindersService.runNow().subscribe((res) => {
-      this.result = res;
-      this.load();
+    this.clearMessages();
+    this.running = true;
+
+    this.remindersService.runNow().subscribe({
+      next: (res) => {
+        this.running = false;
+        this.result = res;
+        this.message = `Reminders run completed. Sent ${res.sentCount}, failed ${res.failedCount}.`;
+        this.load();
+      },
+      error: (e) => {
+        this.running = false;
+        this.error = e?.error?.error ?? 'Failed to run reminders';
+      }
     });
+  }
+
+  private clearMessages() {
+    this.message = '';
+    this.error = '';
   }
 }
