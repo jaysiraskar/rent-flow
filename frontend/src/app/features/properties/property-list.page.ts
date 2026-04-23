@@ -95,19 +95,19 @@ export class PropertyListPage implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    this.loading = true;
-    this.error = '';
+  this.loading = true;
+  this.error = '';
 
-    this.propertiesService.list().subscribe({
-      next: (res) => {
-        this.properties = res;
-        this.loading = false;
-      },
-      error: (e) => {
-        this.error = e?.error?.error ?? 'Failed to load properties';
-        this.loading = false;
-      }
-    });
+  this.propertiesService.list().subscribe({
+    next: (res) => {
+      this.properties = res;
+      this.loading = false;
+    },
+    error: (e) => {
+      this.error = e?.error?.error ?? 'Failed to load properties';
+      this.loading = false;
+    }
+  });
   }
 
   toggleCreateForm() {
