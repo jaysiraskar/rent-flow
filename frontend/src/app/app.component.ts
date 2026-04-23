@@ -16,6 +16,7 @@ import { AuthService } from './core/services/auth.service';
         <a routerLink="/properties" style="color:white;text-decoration:none;">Properties</a>
         <a routerLink="/tenants" style="color:white;text-decoration:none;">Tenants</a>
         <a routerLink="/rent-records" style="color:white;text-decoration:none;">Rent Records</a>
+        <a routerLink="/reminders/logs" style="color:white;text-decoration:none;">Reminders</a>
         <button (click)="logout()">Logout</button>
       </nav>
     </div>
