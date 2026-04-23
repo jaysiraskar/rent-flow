@@ -7,9 +7,11 @@ import { StorageService } from './storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  readonly isLoggedIn = signal<boolean>(!!this.storage.token);
+  readonly isLoggedIn = signal<boolean>(false);
 
-  constructor(private http: HttpClient, private storage: StorageService, private router: Router) {}
+  constructor(private http: HttpClient, private storage: StorageService, private router: Router) {
+    this.isLoggedIn.set(!!this.storage.token);
+  }
 
   login(payload: LoginRequest) {
     return this.http.post<AuthResponse>(`${environment.apiBaseUrl}/auth/login`, payload);

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -26,14 +26,16 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class RegisterComponent {
   error = '';
-  form = this.fb.nonNullable.group({
-    fullName: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    phoneNumber: [''],
-    password: ['', [Validators.required, Validators.minLength(8)]]
-  });
+  form: FormGroup;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {}
+  constructor(private fb: FormBuilder, private authService: AuthService) {
+    this.form = this.fb.nonNullable.group({
+      fullName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phoneNumber: [''],
+      password: ['', [Validators.required, Validators.minLength(8)]]
+    });
+  }
 
   submit() {
     if (this.form.invalid) return;
