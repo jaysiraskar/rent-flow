@@ -27,6 +27,15 @@ public class AuthService(IAppDbContext dbContext, IPasswordHasher passwordHasher
         return new AuthResponse(token, user.FullName, user.Email);
     }
 
+    public async Task<AuthResponse?> GetMeAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        User? user = await dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        return user is null ? null : new AuthResponse(tokenGenerator.Generate(user), user.FullName, user.Email);
+    }
+
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         string email = request.Email.Trim().ToLowerInvariant();
