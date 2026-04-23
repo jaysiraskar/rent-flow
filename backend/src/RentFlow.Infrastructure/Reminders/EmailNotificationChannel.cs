@@ -1,11 +1,12 @@
 using System.Net;
 using System.Net.Mail;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RentFlow.Application.Interfaces;
 
 namespace RentFlow.Infrastructure.Reminders;
 
-public class EmailNotificationChannel(IOptions<SmtpOptions> smtpOptions) : INotificationChannel
+public class EmailNotificationChannel(IOptions<SmtpOptions> smtpOptions, ILogger<EmailNotificationChannel> logger) : INotificationChannel
 {
     public string ChannelName => "Email";
 
@@ -13,7 +14,10 @@ public class EmailNotificationChannel(IOptions<SmtpOptions> smtpOptions) : INoti
     {
         var options = smtpOptions.Value;
         if (string.IsNullOrWhiteSpace(options.Host))
-            throw new InvalidOperationException("SMTP host is not configured.");
+        {
+            logger.LogWarning("SMTP host not configured. Skipping email send to {Recipient}", recipient);
+            return;
+        }
 
         using var client = new SmtpClient(options.Host, options.Port)
         {

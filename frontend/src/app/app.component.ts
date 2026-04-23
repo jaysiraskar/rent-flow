@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 
 @Component({
@@ -9,7 +10,7 @@ import { AuthService } from './core/services/auth.service';
   selector: 'app-root',
   imports: [CommonModule, RouterOutlet, RouterLink],
   template: `
-  <header *ngIf="showHeader" style="background:#111827;color:white;padding:.75rem 1rem;">
+  <header *ngIf="showHeader()" style="background:#111827;color:white;padding:.75rem 1rem;">
     <div class="container row justify-between">
       <strong>RentFlow</strong>
       <nav class="row">

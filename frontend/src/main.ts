@@ -11,3 +11,4 @@ bootstrapApplication(AppComponent, {
     provideHttpClient(withInterceptors([authInterceptor]))
   ]
 }).catch((err) => console.error(err));
+console.log("RentFlow frontend scaffold");

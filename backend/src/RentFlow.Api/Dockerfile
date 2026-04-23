@@ -19,3 +19,9 @@ ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "RentFlow.Api.dll"]
+COPY . .
+RUN dotnet publish -c Release -o /app
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app .
+ENTRYPOINT ["dotnet","RentFlow.Api.dll"]

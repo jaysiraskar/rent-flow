@@ -10,14 +10,13 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 {
     public async Task<int> GenerateMonthlyAsync(Guid landlordId, short year, byte month, Guid? propertyId, CancellationToken cancellationToken = default)
     {
-        if (month is < 1 or > 12) throw new InvalidOperationException("Month must be between 1 and 12.");
-        if (year is < 2000 or > 2100) throw new InvalidOperationException("Year is out of allowed range.");
-
         var tenantsQuery = dbContext.Tenants
             .Where(t => t.IsActive && t.Property!.LandlordId == landlordId);
 
         if (propertyId.HasValue)
+        {
             tenantsQuery = tenantsQuery.Where(t => t.PropertyId == propertyId.Value);
+        }
 
         var tenants = await tenantsQuery.ToListAsync(cancellationToken);
         var tenantIds = tenants.Select(t => t.Id).ToList();
@@ -79,8 +78,12 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 
         record.PaidAmount = request.PaidAmount;
         record.PaidOnUtc = request.PaidOnUtc ?? DateTime.UtcNow;
-        record.Notes = request.Notes?.Trim();
-        record.Status = RentStatusCalculator.Calculate(record.ExpectedAmount, request.PaidAmount);
+        record.Notes = request.Notes;
+        record.Status = request.PaidAmount <= 0
+            ? RentPaymentStatus.Unpaid
+            : request.PaidAmount < record.ExpectedAmount
+                ? RentPaymentStatus.Partial
+                : RentPaymentStatus.Paid;
         record.UpdatedAtUtc = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
