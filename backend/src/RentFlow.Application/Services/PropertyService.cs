@@ -22,7 +22,7 @@ public class PropertyService(IAppDbContext dbContext) : IPropertyService
 
     public async Task<PropertyResponse> CreateAsync(Guid landlordId, PropertyCreateRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = new Property
+        Property entity = new()
         {
             LandlordId = landlordId,
             Name = request.Name,
@@ -38,7 +38,7 @@ public class PropertyService(IAppDbContext dbContext) : IPropertyService
 
     public async Task<PropertyResponse?> UpdateAsync(Guid landlordId, Guid propertyId, PropertyUpdateRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await dbContext.Properties.FirstOrDefaultAsync(x => x.Id == propertyId && x.LandlordId == landlordId, cancellationToken);
+        Property? entity = await dbContext.Properties.FirstOrDefaultAsync(x => x.Id == propertyId && x.LandlordId == landlordId, cancellationToken);
         if (entity is null) return null;
 
         entity.Name = request.Name;
@@ -54,7 +54,7 @@ public class PropertyService(IAppDbContext dbContext) : IPropertyService
 
     public async Task<bool> DeleteAsync(Guid landlordId, Guid propertyId, CancellationToken cancellationToken = default)
     {
-        var entity = await dbContext.Properties.Include(x => x.Tenants)
+        Property? entity = await dbContext.Properties.Include(x => x.Tenants)
             .FirstOrDefaultAsync(x => x.Id == propertyId && x.LandlordId == landlordId, cancellationToken);
         if (entity is null) return false;
         if (entity.Tenants.Any(t => t.IsActive)) throw new InvalidOperationException("Cannot delete property with active tenants.");

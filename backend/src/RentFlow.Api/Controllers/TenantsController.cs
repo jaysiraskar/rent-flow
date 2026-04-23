@@ -18,21 +18,21 @@ public class TenantsController(ITenantService tenantService) : ControllerBase
     [HttpPost("properties/{propertyId:guid}/tenants")]
     public async Task<ActionResult<TenantResponse>> Create(Guid propertyId, [FromBody] TenantCreateRequest request, CancellationToken cancellationToken)
     {
-        var tenant = await tenantService.CreateAsync(HttpContext.GetUserId(), propertyId, request, cancellationToken);
+        TenantResponse? tenant = await tenantService.CreateAsync(HttpContext.GetUserId(), propertyId, request, cancellationToken);
         return tenant is null ? NotFound() : CreatedAtAction(nameof(GetById), new { tenantId = tenant.Id }, tenant);
     }
 
     [HttpGet("tenants/{tenantId:guid}")]
     public async Task<ActionResult<TenantResponse>> GetById(Guid tenantId, CancellationToken cancellationToken)
     {
-        var tenant = await tenantService.GetByIdAsync(HttpContext.GetUserId(), tenantId, cancellationToken);
+        TenantResponse? tenant = await tenantService.GetByIdAsync(HttpContext.GetUserId(), tenantId, cancellationToken);
         return tenant is null ? NotFound() : Ok(tenant);
     }
 
     [HttpPut("tenants/{tenantId:guid}")]
     public async Task<ActionResult<TenantResponse>> Update(Guid tenantId, [FromBody] TenantUpdateRequest request, CancellationToken cancellationToken)
     {
-        var tenant = await tenantService.UpdateAsync(HttpContext.GetUserId(), tenantId, request, cancellationToken);
+        TenantResponse? tenant = await tenantService.UpdateAsync(HttpContext.GetUserId(), tenantId, request, cancellationToken);
         return tenant is null ? NotFound() : Ok(tenant);
     }
 

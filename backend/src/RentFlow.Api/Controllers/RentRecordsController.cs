@@ -14,7 +14,7 @@ public class RentRecordsController(IRentRecordService rentRecordService) : Contr
     [HttpPost("generate-monthly")]
     public async Task<ActionResult<object>> GenerateMonthly([FromQuery] short year, [FromQuery] byte month, [FromQuery] Guid? propertyId, CancellationToken cancellationToken)
     {
-        var generated = await rentRecordService.GenerateMonthlyAsync(HttpContext.GetUserId(), year, month, propertyId, cancellationToken);
+        int generated = await rentRecordService.GenerateMonthlyAsync(HttpContext.GetUserId(), year, month, propertyId, cancellationToken);
         return Ok(new { generated });
     }
 
@@ -25,7 +25,7 @@ public class RentRecordsController(IRentRecordService rentRecordService) : Contr
     [HttpPut("{rentRecordId:guid}/payment")]
     public async Task<ActionResult<RentRecordResponse>> UpdatePayment(Guid rentRecordId, [FromBody] RentPaymentUpdateRequest request, CancellationToken cancellationToken)
     {
-        var record = await rentRecordService.UpdatePaymentAsync(HttpContext.GetUserId(), rentRecordId, request, cancellationToken);
+        RentRecordResponse? record = await rentRecordService.UpdatePaymentAsync(HttpContext.GetUserId(), rentRecordId, request, cancellationToken);
         return record is null ? NotFound() : Ok(record);
     }
 }

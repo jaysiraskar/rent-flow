@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RentFlow.Application.DTOs.Reminders;
 using RentFlow.Application.Interfaces;
 using RentFlow.Infrastructure.Data;
 
@@ -14,7 +15,7 @@ public class RemindersController(IRentReminderService reminderService, AppDbCont
     [HttpPost("run-now")]
     public async Task<IActionResult> RunNow(CancellationToken cancellationToken)
     {
-        var result = await reminderService.ProcessDueRemindersAsync(cancellationToken);
+        ReminderDispatchResult result = await reminderService.ProcessDueRemindersAsync(cancellationToken);
         return Ok(result);
     }
 

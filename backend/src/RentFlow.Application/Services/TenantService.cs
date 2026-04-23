@@ -22,10 +22,10 @@ public class TenantService(IAppDbContext dbContext) : ITenantService
 
     public async Task<TenantResponse?> CreateAsync(Guid landlordId, Guid propertyId, TenantCreateRequest request, CancellationToken cancellationToken = default)
     {
-        var hasProperty = await dbContext.Properties.AnyAsync(p => p.Id == propertyId && p.LandlordId == landlordId, cancellationToken);
+        bool hasProperty = await dbContext.Properties.AnyAsync(p => p.Id == propertyId && p.LandlordId == landlordId, cancellationToken);
         if (!hasProperty) return null;
 
-        var tenant = new Tenant
+        Tenant tenant = new()
         {
             PropertyId = propertyId,
             FullName = request.FullName,
@@ -43,7 +43,7 @@ public class TenantService(IAppDbContext dbContext) : ITenantService
 
     public async Task<TenantResponse?> UpdateAsync(Guid landlordId, Guid tenantId, TenantUpdateRequest request, CancellationToken cancellationToken = default)
     {
-        var tenant = await dbContext.Tenants.Include(t => t.Property)
+        Tenant? tenant = await dbContext.Tenants.Include(t => t.Property)
             .FirstOrDefaultAsync(t => t.Id == tenantId && t.Property!.LandlordId == landlordId, cancellationToken);
         if (tenant is null) return null;
 
@@ -62,7 +62,7 @@ public class TenantService(IAppDbContext dbContext) : ITenantService
 
     public async Task<bool> DeleteAsync(Guid landlordId, Guid tenantId, CancellationToken cancellationToken = default)
     {
-        var tenant = await dbContext.Tenants.Include(t => t.Property)
+        Tenant? tenant = await dbContext.Tenants.Include(t => t.Property)
             .FirstOrDefaultAsync(t => t.Id == tenantId && t.Property!.LandlordId == landlordId, cancellationToken);
         if (tenant is null) return false;
 

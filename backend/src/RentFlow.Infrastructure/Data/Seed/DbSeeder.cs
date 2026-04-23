@@ -12,14 +12,14 @@ public static class DbSeeder
 
         if (await dbContext.Users.AnyAsync()) return;
 
-        var landlord = new User
+        User landlord = new()
         {
             FullName = "Demo Landlord",
             Email = "demo@rentflow.in",
             PasswordHash = hasher.Hash("Demo@123")
         };
 
-        var property = new Property
+        Property property = new()
         {
             Landlord = landlord,
             Name = "Sunrise PG",

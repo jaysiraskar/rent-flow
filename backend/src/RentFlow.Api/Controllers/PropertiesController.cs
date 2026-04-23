@@ -18,21 +18,21 @@ public class PropertiesController(IPropertyService propertyService) : Controller
     [HttpGet("{propertyId:guid}")]
     public async Task<ActionResult<PropertyResponse>> GetById(Guid propertyId, CancellationToken cancellationToken)
     {
-        var property = await propertyService.GetByIdAsync(HttpContext.GetUserId(), propertyId, cancellationToken);
+        PropertyResponse? property = await propertyService.GetByIdAsync(HttpContext.GetUserId(), propertyId, cancellationToken);
         return property is null ? NotFound() : Ok(property);
     }
 
     [HttpPost]
     public async Task<ActionResult<PropertyResponse>> Create([FromBody] PropertyCreateRequest request, CancellationToken cancellationToken)
     {
-        var property = await propertyService.CreateAsync(HttpContext.GetUserId(), request, cancellationToken);
+        PropertyResponse property = await propertyService.CreateAsync(HttpContext.GetUserId(), request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { propertyId = property.Id }, property);
     }
 
     [HttpPut("{propertyId:guid}")]
     public async Task<ActionResult<PropertyResponse>> Update(Guid propertyId, [FromBody] PropertyUpdateRequest request, CancellationToken cancellationToken)
     {
-        var property = await propertyService.UpdateAsync(HttpContext.GetUserId(), propertyId, request, cancellationToken);
+        PropertyResponse? property = await propertyService.UpdateAsync(HttpContext.GetUserId(), propertyId, request, cancellationToken);
         return property is null ? NotFound() : Ok(property);
     }
 

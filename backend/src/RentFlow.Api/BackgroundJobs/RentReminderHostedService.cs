@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RentFlow.Application.DTOs.Reminders;
 using RentFlow.Application.Interfaces;
 using RentFlow.Infrastructure.Reminders;
 
@@ -17,9 +18,9 @@ public class RentReminderHostedService(
         {
             try
             {
-                using var scope = serviceProvider.CreateScope();
-                var reminderService = scope.ServiceProvider.GetRequiredService<IRentReminderService>();
-                var result = await reminderService.ProcessDueRemindersAsync(stoppingToken);
+                using IServiceScope scope = serviceProvider.CreateScope();
+                IRentReminderService reminderService = scope.ServiceProvider.GetRequiredService<IRentReminderService>();
+                ReminderDispatchResult result = await reminderService.ProcessDueRemindersAsync(stoppingToken);
                 logger.LogInformation("Rent reminders processed. Checked={Checked}, Sent={Sent}, Failed={Failed}", result.CheckedRecords, result.SentCount, result.FailedCount);
             }
             catch (Exception ex)

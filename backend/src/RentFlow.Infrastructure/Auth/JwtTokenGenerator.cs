@@ -12,19 +12,19 @@ public class JwtTokenGenerator(IConfiguration configuration) : IAuthTokenGenerat
 {
     public string Generate(User user)
     {
-        var key = configuration["Jwt:Key"] ?? "dev-only-super-secret-key-change-me";
-        var issuer = configuration["Jwt:Issuer"] ?? "RentFlow";
-        var audience = configuration["Jwt:Audience"] ?? "RentFlow.Client";
+        string key = configuration["Jwt:Key"] ?? "dev-only-super-secret-key-change-me";
+        string issuer = configuration["Jwt:Issuer"] ?? "RentFlow";
+        string audience = configuration["Jwt:Audience"] ?? "RentFlow.Client";
 
-        var claims = new List<Claim>
-        {
+        List<Claim> claims =
+        [
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new("name", user.FullName)
-        };
+        ];
 
-        var credentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(issuer, audience, claims, expires: DateTime.UtcNow.AddDays(7), signingCredentials: credentials);
+        SigningCredentials credentials = new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
+        JwtSecurityToken token = new(issuer, audience, claims, expires: DateTime.UtcNow.AddDays(7), signingCredentials: credentials);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

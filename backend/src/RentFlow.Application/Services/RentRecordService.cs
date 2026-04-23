@@ -10,7 +10,7 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 {
     public async Task<int> GenerateMonthlyAsync(Guid landlordId, short year, byte month, Guid? propertyId, CancellationToken cancellationToken = default)
     {
-        var tenantsQuery = dbContext.Tenants
+        IQueryable<Tenant> tenantsQuery = dbContext.Tenants
             .Where(t => t.IsActive && t.Property!.LandlordId == landlordId);
 
         if (propertyId.HasValue)
@@ -18,16 +18,16 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
             tenantsQuery = tenantsQuery.Where(t => t.PropertyId == propertyId.Value);
         }
 
-        var tenants = await tenantsQuery.ToListAsync(cancellationToken);
-        var tenantIds = tenants.Select(t => t.Id).ToList();
-        var existingIds = (await dbContext.RentRecords
+        List<Tenant> tenants = await tenantsQuery.ToListAsync(cancellationToken);
+        List<Guid> tenantIds = tenants.Select(t => t.Id).ToList();
+        HashSet<Guid> existingIds = (await dbContext.RentRecords
             .Where(r => r.BillingYear == year && r.BillingMonth == month && tenantIds.Contains(r.TenantId))
             .Select(r => r.TenantId)
             .ToListAsync(cancellationToken))
             .ToHashSet();
 
-        var created = 0;
-        foreach (var tenant in tenants.Where(t => !existingIds.Contains(t.Id)))
+        int created = 0;
+        foreach (Tenant? tenant in tenants.Where(t => !existingIds.Contains(t.Id)))
         {
             dbContext.RentRecords.Add(new RentRecord
             {
@@ -49,14 +49,14 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 
     public async Task<IReadOnlyCollection<RentRecordResponse>> GetAsync(Guid landlordId, short year, byte month, Guid? propertyId, string? status, CancellationToken cancellationToken = default)
     {
-        var query = dbContext.RentRecords
+        IQueryable<RentRecord> query = dbContext.RentRecords
             .Where(r => r.BillingYear == year && r.BillingMonth == month && r.Property!.LandlordId == landlordId)
             .Include(r => r.Tenant)
             .Include(r => r.Property)
             .AsQueryable();
 
         if (propertyId.HasValue) query = query.Where(r => r.PropertyId == propertyId.Value);
-        if (Enum.TryParse<RentPaymentStatus>(status ?? string.Empty, true, out var parsedStatus))
+        if (Enum.TryParse<RentPaymentStatus>(status ?? string.Empty, true, out RentPaymentStatus parsedStatus))
             query = query.Where(r => r.Status == parsedStatus);
 
         return await query
@@ -70,7 +70,7 @@ public class RentRecordService(IAppDbContext dbContext) : IRentRecordService
 
     public async Task<RentRecordResponse?> UpdatePaymentAsync(Guid landlordId, Guid rentRecordId, RentPaymentUpdateRequest request, CancellationToken cancellationToken = default)
     {
-        var record = await dbContext.RentRecords
+        RentRecord? record = await dbContext.RentRecords
             .Include(r => r.Tenant)
             .Include(r => r.Property)
             .FirstOrDefaultAsync(r => r.Id == rentRecordId && r.Property!.LandlordId == landlordId, cancellationToken);

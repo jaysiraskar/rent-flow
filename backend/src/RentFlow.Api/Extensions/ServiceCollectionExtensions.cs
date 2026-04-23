@@ -38,9 +38,9 @@ public static class ServiceCollectionExtensions
         services.Configure<ReminderOptions>(configuration.GetSection("Reminders"));
         services.AddHostedService<RentReminderHostedService>();
 
-        var key = configuration["Jwt:Key"] ?? "dev-only-super-secret-key-change-me";
-        var issuer = configuration["Jwt:Issuer"] ?? "RentFlow";
-        var audience = configuration["Jwt:Audience"] ?? "RentFlow.Client";
+        string key = configuration["Jwt:Key"] ?? "dev-only-super-secret-key-change-me";
+        string issuer = configuration["Jwt:Issuer"] ?? "RentFlow";
+        string audience = configuration["Jwt:Audience"] ?? "RentFlow.Client";
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

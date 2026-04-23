@@ -12,20 +12,20 @@ public class EmailNotificationChannel(IOptions<SmtpOptions> smtpOptions, ILogger
 
     public async Task SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken = default)
     {
-        var options = smtpOptions.Value;
+        SmtpOptions options = smtpOptions.Value;
         if (string.IsNullOrWhiteSpace(options.Host))
         {
             logger.LogWarning("SMTP host not configured. Skipping email send to {Recipient}", recipient);
             return;
         }
 
-        using var client = new SmtpClient(options.Host, options.Port)
+        using SmtpClient client = new(options.Host, options.Port)
         {
             Credentials = new NetworkCredential(options.Username, options.Password),
             EnableSsl = options.EnableSsl
         };
 
-        using var message = new MailMessage
+        using MailMessage message = new()
         {
             From = new MailAddress(options.FromEmail, options.FromName),
             Subject = subject,

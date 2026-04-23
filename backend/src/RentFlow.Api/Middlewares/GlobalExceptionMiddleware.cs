@@ -21,7 +21,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 InvalidOperationException => (int)HttpStatusCode.BadRequest,
                 _ => (int)HttpStatusCode.InternalServerError
             };
-            var payload = JsonSerializer.Serialize(new { error = ex.Message });
+            string payload = JsonSerializer.Serialize(new { error = ex.Message });
             await context.Response.WriteAsync(payload);
         }
     }
